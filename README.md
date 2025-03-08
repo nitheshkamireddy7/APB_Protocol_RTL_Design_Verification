@@ -78,7 +78,7 @@ endfunction
 - Implement additional security features.
 
 ## Author
-- **Your Name**
+- **Nithesh Kamireddy**
 - **Date**: March 2025
 
 ## License
