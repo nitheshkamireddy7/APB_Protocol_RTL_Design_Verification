@@ -60,17 +60,22 @@ always_comb begin
     // APB_Slave supports only secured data access
     access: begin
       pready = 1;
-      if (Prot[1] == 0) begin  // Secured access
-        if (pwrite) begin 
-          memory[addr] = update_memory(pwdata, pstrobe, memory[addr]);
-          pslverr = 0;
-        end else begin
-          prdata = memory[addr];
-        end
-      end else begin
-        // Unsecured access, no transaction allowed
-        next = idle;
-      end
+     if (pready == 1) begin
+  if (Prot[1] == 0) begin  // Secured access
+    if (pwrite) begin 
+      memory[addr] = update_memory(pwdata, pstrobe, memory[addr]);
+      pslverr = 0;
+    end else begin
+      prdata = memory[addr];
+    end
+  end else begin
+    // Unsecured access, no transaction allowed
+    next = idle;
+  end
+end else begin
+  next = idle;
+end
+
     end
   endcase
 end
