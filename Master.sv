@@ -16,5 +16,23 @@ module APB_master (
   
 );
 
-  APB_slave bus(
+  APB_slave bus(clk,resetn,pwrite,addr,psel,penable,pstrobe,prot,pwdata,pready,pslverr,prdata);
+
+  //clock initialization
+  clk =1;
+  always #10 clk = ~clk;
+
+  task reset;
+    begin 
+    resetn =0;
+      (@posedge clk);
+    resetn=1;
+    psel=1'b0;
+    end
+
+    task write;
+      begin
+        
+        
+      end
 endmodule
