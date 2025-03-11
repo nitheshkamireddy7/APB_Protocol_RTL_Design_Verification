@@ -6,6 +6,7 @@ module APB_master_tb;
     logic psel;
     logic penable;
     logic [31:0] pwdata;
+    logic [2:0] prot;  // Added protection bits
     logic pready;
     logic pslverr;
     logic [31:0] prdata;
@@ -19,6 +20,7 @@ module APB_master_tb;
         .psel(psel),
         .penable(penable),
         .pwdata(pwdata),
+        .prot(prot),  // Connect prot to the slave
         .pready(pready),
         .pslverr(pslverr),
         .prdata(prdata)
@@ -38,20 +40,43 @@ module APB_master_tb;
             penable = 0;
             pwrite = 0;
             addr = 0;
+            prot = 3'b000;  // Initialize protection bits
         end
     endtask
 
-    task read_transfer;
+    task read_transfer_unsecured;
         begin
             psel = 1;
             pwrite = 0;
+            addr = 5'b00001;
+            prot = 3'b010;  // Set prot value for testing
             @(posedge clk);
             penable = 1;
-            @(posedge clk); // One extra clock cycle
+            @(posedge clk);
 
             wait (pready == 1);
             @(posedge clk);
-            @(posedge clk); // Wait for pready to be high for 2 cycles
+            @(posedge clk);
+            penable = 0;
+            psel = 0;
+
+            $strobe("Reading data: data_rd=%0d, address_rd=%0d", prdata, addr);
+        end
+    endtask
+    
+   task read_transfer_secured;
+        begin
+            psel = 1;
+            pwrite = 0;
+            addr = 5'b00001;
+            prot = 3'b000;  // Set prot value for testing
+            @(posedge clk);
+            penable = 1;
+            @(posedge clk);
+
+            wait (pready == 1);
+            @(posedge clk);
+            @(posedge clk);
             penable = 0;
             psel = 0;
 
@@ -64,14 +89,15 @@ module APB_master_tb;
             psel = 1;
             pwrite = 1;
             pwdata = $random;
-            addr = $random;
+            addr = 5'b00001;
+            prot = 3'b000;  // Set prot value for testing
             @(posedge clk);
             penable = 1;
-            @(posedge clk); // One extra clock cycle
+            @(posedge clk);
 
             wait (pready == 1);
             @(posedge clk);
-            @(posedge clk); // Wait for pready to be high for 2 cycles
+            @(posedge clk);
             penable = 0;
 
             $strobe("Writing data: data_wr=%0d, address_wr=%0d", pwdata, addr);
@@ -82,16 +108,27 @@ module APB_master_tb;
         begin
             repeat (1) begin
                 write_transfer;
-                read_transfer;
+                read_transfer_secured;
             end
         end
     endtask
+     
+    task read_write_transfer_unsecured;
+        begin
+            repeat (1) begin
+                write_transfer;
+                read_transfer_unsecured;
+            end
+        end
+    endtask
+
+
 
     initial begin
         clk = 0;
         reset_and_initialization;
         read_write_transfer;
-        read_write_transfer;
+        read_write_transfer_unsecured;
         #80;
         $finish;
     end
