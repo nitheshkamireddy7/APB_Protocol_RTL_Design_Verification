@@ -5,13 +5,12 @@ module APB_master_tb;
     logic [4:0] addr;
     logic psel;
     logic penable;
-    //logic [2:0] Prot;
     logic [31:0] pwdata;
     logic pready;
     logic pslverr;
     logic [31:0] prdata;
 
-    // Instantiate APB Master
+    // Instantiate APB Slave
     APB_slave uut (
         .clk(clk),
         .resetn(resetn),
@@ -48,14 +47,15 @@ module APB_master_tb;
             pwrite = 0;
             @(posedge clk);
             penable = 1;
+            @(posedge clk); // One extra clock cycle
 
             wait (pready == 1);
-
             @(posedge clk);
+            @(posedge clk); // Wait for pready to be high for 2 cycles
             penable = 0;
             psel = 0;
 
-            $strobe("reading data from memory data_rd=%0d address_rd=%0d", prdata, addr);
+            $strobe("Reading data: data_rd=%0d, address_rd=%0d", prdata, addr);
         end
     endtask
 
@@ -65,16 +65,16 @@ module APB_master_tb;
             pwrite = 1;
             pwdata = $random;
             addr = $random;
-
             @(posedge clk);
             penable = 1;
+            @(posedge clk); // One extra clock cycle
 
             wait (pready == 1);
-
             @(posedge clk);
+            @(posedge clk); // Wait for pready to be high for 2 cycles
             penable = 0;
 
-            $strobe("writing data into memory data_wr=%0d address_rd=%0d", pwdata, addr);
+            $strobe("Writing data: data_wr=%0d, address_wr=%0d", pwdata, addr);
         end
     endtask
 
@@ -91,9 +91,8 @@ module APB_master_tb;
         clk = 0;
         reset_and_initialization;
         read_write_transfer;
+        read_write_transfer;
         #80;
         $finish;
     end
-
-    
 endmodule
