@@ -6,7 +6,7 @@ module APB_slave(
   input logic [4:0] addr,
   input logic psel,
   input logic penable,
-  input logic [3:0] pstrobe,
+ // input logic [3:0] pstrobe,
   input logic [2:0] Prot,
   input logic [31:0] pwdata,
 
@@ -62,9 +62,9 @@ always_comb begin
       pready = 1;
       if (Prot[1] == 0) begin  // Secured access
         if (pwrite) begin 
-          memory[addr] = update_memory(pwdata, pstrobe, memory[addr]);
+          memory[addr] = pwdata;
           pslverr = 0;
-        end else begin
+        end else if(!pwrite) begin
           prdata = memory[addr];
         end
       end else begin
@@ -76,18 +76,5 @@ always_comb begin
 end
 
 // Function to update memory based on byte enable (strobe)
-function logic [31:0] update_memory(
-  input logic [31:0] pwdata, 
-  input logic [3:0]  pstrobe, 
-  input logic [31:0] memory_data
-);
-  begin
-    if (pstrobe[0]) memory_data[7:0]   = pwdata[7:0];   
-    if (pstrobe[1]) memory_data[15:8]  = pwdata[15:8];  
-    if (pstrobe[2]) memory_data[23:16] = pwdata[23:16]; 
-    if (pstrobe[3]) memory_data[31:24] = pwdata[31:24]; 
-    update_memory = memory_data;
-  end
-endfunction
 
 endmodule
