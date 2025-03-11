@@ -1,14 +1,12 @@
 module APB_slave (
-    // Inputs from APB_Master to APB_slave
     input logic clk,
-    input logic resetn, // Asynchronous active low reset
+    input logic resetn,
     input logic pwrite,
     input logic [4:0] addr,
     input logic psel,
     input logic penable,
     input logic [31:0] pwdata,
 
-    // Outputs from APB_slave
     output logic pready,
     output logic pslverr,
     output logic [31:0] prdata
@@ -17,30 +15,43 @@ module APB_slave (
     // Memory declaration of APB_slave
     logic [31:0] memory[31:0];
 
-    typedef enum logic [2:0] {
+    typedef enum logic [1:0] {
         idle,
         setup,
         access
     } APB_states;
 
     APB_states present, next;
+    int cycle_counter;
 
-    // State transition
+    // State transition and pready control
     always_ff @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             present <= idle;
+            cycle_counter <= 0;
+            pready <= 0;
         end else begin
             present <= next;
+
+            if (present == access) begin
+                if (cycle_counter < 2) begin
+                    pready <= 1;  // Keep pready high for 2 cycles
+                    cycle_counter <= cycle_counter + 1;
+                end else begin
+                    cycle_counter <= 0;
+                    pready <= 0;  // Lower pready after 2 cycles
+                end
+            end else begin
+                cycle_counter <= 0;
+                pready <= 0;
+            end
         end
     end
 
     // State machine logic
     always_comb begin
-        // Default values to avoid latches
-        pready = 0;
         pslverr = 0;
-        prdata = 32'b0;
-        next = present; // Default to current state
+        next = present; // Default transition
 
         case (present)
             idle: begin
@@ -55,18 +66,25 @@ module APB_slave (
                 end
             end
 
-            // APB_Slave supports only secured data access
             access: begin
-                pready = 1;
-                // Secured access
-                if (pwrite) begin
-                    memory[addr] = pwdata;
-                    pslverr = 0;
-                end else if (!pwrite) begin
-                    prdata = memory[addr];
+                if (cycle_counter >= 2) begin
+                    next = idle;
                 end
             end
         endcase
+    end
+
+    // Immediate read/write when penable is HIGH
+    always_comb begin
+        prdata = 'x; // Default value
+
+        if (psel && penable && pready) begin
+            if (pwrite) begin
+                memory[addr] = pwdata; // Immediate write
+            end else begin
+                prdata = memory[addr]; // Immediate read
+            end
+        end
     end
 
 endmodule
