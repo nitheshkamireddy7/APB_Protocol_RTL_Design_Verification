@@ -7,7 +7,7 @@ module APB_slave(
   input logic psel,
   input logic penable,
  // input logic [3:0] pstrobe,
-  input logic [2:0] Prot,
+  //input logic [2:0] Prot,
   input logic [31:0] pwdata,
 
   // Outputs from APB_slave
@@ -60,19 +60,15 @@ always_comb begin
     // APB_Slave supports only secured data access
     access: begin
       pready = 1;
-      if (Prot[1] == 0) begin  // Secured access
+       // Secured access
         if (pwrite) begin 
           memory[addr] = pwdata;
           pslverr = 0;
         end else if(!pwrite) begin
           prdata = memory[addr];
         end
-      end else begin
-        // Unsecured access, no transaction allowed
-        next = idle;
-      end
-    end
-  endcase
+      end 
+    end case
 end
 
 // Function to update memory based on byte enable (strobe)
