@@ -6,6 +6,7 @@ module APB_slave (
     input logic psel,
     input logic penable,
     input logic [31:0] pwdata,
+    input logic [2:0] prot,  // 3-bit protection input, but we only use prot[1]
 
     output logic pready,
     output logic pslverr,
@@ -30,6 +31,7 @@ module APB_slave (
             present <= idle;
             cycle_counter <= 0;
             pready <= 0;
+            // Clear error state during reset
         end else begin
             present <= next;
 
@@ -50,7 +52,6 @@ module APB_slave (
 
     // State machine logic
     always_comb begin
-        pslverr = 0;
         next = present; // Default transition
 
         case (present)
@@ -76,13 +77,24 @@ module APB_slave (
 
     // Immediate read/write when penable is HIGH
     always_comb begin
-        prdata = 'x; // Default value
+        prdata = 'x; // Default value for prdata
 
         if (psel && penable && pready) begin
-            if (pwrite) begin
-                memory[addr] = pwdata; // Immediate write
+            // If prot[1] == 0, proceed with normal access
+            if (prot[1] == 0) begin
+                if (pwrite) begin
+                    // Write normally when prot[1] == 0
+                    memory[addr] = pwdata;
+                    pslverr = 0;  // No error
+                end else begin
+                    // Read normally when prot[1] == 0
+                    prdata = memory[addr];
+                    pslverr =0;
+                end
             end else begin
-                prdata = memory[addr]; // Immediate read
+                // If prot[1] == 1, this is an unsecured access
+                pslverr = 1;  // Set error state for unsecured access
+                prdata = 'x;  // Return unknown value for prdata
             end
         end
     end
