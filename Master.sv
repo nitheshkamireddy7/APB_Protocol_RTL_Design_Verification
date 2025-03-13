@@ -1,4 +1,4 @@
-module APB_master_tb;
+module APB_master;
     logic clk;
     logic resetn;
     logic pwrite;
@@ -49,7 +49,7 @@ module APB_master_tb;
             psel = 1;
             pwrite = 0;
             addr = 5'b00001;
-            prot = 3'b010;  // Set prot value for testing
+            prot = 3'b010;  // Set prot value for testing if prot[2] is high its unsecured access
             @(posedge clk);
             penable = 1;
             @(posedge clk);
