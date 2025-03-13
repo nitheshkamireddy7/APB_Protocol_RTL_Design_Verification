@@ -75,7 +75,7 @@ module APB_slave (
         endcase
     end
 
-    // Immediate read/write when penable is HIGH
+    
     always_comb begin
         prdata = 'x; // Default value for prdata
 
